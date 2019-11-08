@@ -1,5 +1,6 @@
 package com.woita.hackathon;
 
+import com.google.common.collect.Comparators;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.junit.*;
@@ -8,8 +9,13 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -132,6 +138,58 @@ public class TraditionalTests {
         // verify that an error message is displayed
         String errorMessage = driver.findElement(By.className("alert-warning")).getText();
         assertEquals(expectedErrorMessage, errorMessage);
+    }
+
+    @Test
+    public void tableSortTest() {
+        WebElement usernameField = driver.findElement(By.id("username"));
+        usernameField.sendKeys("susan");
+        WebElement passwordField = driver.findElement(By.id("password"));
+        passwordField.sendKeys("opensesame");
+
+        WebElement loginButton = driver.findElement(By.id("log-in"));
+        loginButton.click();
+
+        List<Float> orderedTransactionsBefore = new ArrayList<>();
+
+        orderedTransactionsBefore = getOrderedAmounts();
+
+        WebElement amountLink = driver.findElement(By.id("amount"));
+        amountLink.click();
+
+        List<Float> orderedTransactionsAfter = new ArrayList<>();
+
+        orderedTransactionsAfter = getOrderedAmounts();
+
+
+//        // verify the same number of transactions still remain
+        assertEquals(orderedTransactionsBefore.size(), orderedTransactionsAfter.size());
+//        // verify that by clicking the Amount link the order of the transactions are now ordered in ascending order
+        boolean isInAscendingOrder = Comparators.isInOrder(orderedTransactionsAfter, Comparator.naturalOrder());
+        System.out.println(isInAscendingOrder);
+
+    }
+
+    private List<Float> getOrderedAmounts() {
+        List<Float> orderedTransactions = new ArrayList<>();
+
+        WebElement tableTransactions = new WebDriverWait(driver, 5)
+                .until(ExpectedConditions.presenceOfElementLocated(By.xpath("//table[@id='transactionsTable']/tbody")));
+
+        List<WebElement> tableRows = tableTransactions.findElements(By.tagName("tr"));
+
+
+        for (WebElement row : tableRows) {
+            String amountLabel = row.findElements(By.tagName("td")).get(4).getText();
+            Float value = extractAmount(amountLabel);
+            orderedTransactions.add(value);
+        }
+        return orderedTransactions;
+    }
+
+    private Float extractAmount(String amountLabel) {
+        String[] tokenised = amountLabel.split(" ");
+        return Float.parseFloat(tokenised[1].replaceAll(",", ""));
     }
 
     private boolean elementHasClasses(WebElement element, String classNames) {
